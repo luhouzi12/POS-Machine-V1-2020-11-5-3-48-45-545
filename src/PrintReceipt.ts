@@ -1,12 +1,127 @@
 import {loadAllItems, loadPromotions} from './Dependencies'
 
 export function printReceipt(tags: string[]): string {
-  return `***<store earning no money>Receipt ***
-Name：Sprite，Quantity：5 bottles，Unit：3.00(yuan)，Subtotal：12.00(yuan)
-Name：Litchi，Quantity：2.5 pounds，Unit：15.00(yuan)，Subtotal：37.50(yuan)
-Name：Instant Noodles，Quantity：3 bags，Unit：4.50(yuan)，Subtotal：9.00(yuan)
-----------------------
-Total：58.50(yuan)
-Discounted prices：7.50(yuan)
-**********************`
+  const allItems: object[] = loadAllItems()
+  const promotionBarcodes: string[] = loadPromotions()[0].barcodes
+  const items = identifyBarcodes(tags, allItems)
+  const itemsAfterPromotion = checkPromotion(items, promotionBarcodes)
+  const subtotals = calculatePrice(itemsAfterPromotion)
+  return render(subtotals, items)
 }
+
+class Item{
+  barcode: string
+  name: string
+  quantity: number
+  unit: string
+  price: number
+  discounted: number
+
+  constructor(barcode: string, name: string, quantity: number, unit: string, price: number)
+  {
+    this.barcode = barcode
+    this.name = name
+    this.quantity = quantity
+    this.unit = unit
+    this.price = price
+    this.discounted = 0
+  }
+}
+function identifyBarcodes(barcodes: string[], allItems: any[]): Item[]
+{
+  const items: Item[] =[]
+  for(let i = 0; i < barcodes.length; i++)
+  {
+    let isInItems = false
+    let quantity = 0
+    if(barcodes[i].length === 10)
+    {
+      quantity = 1
+    }
+    else
+    {
+      quantity = Number(barcodes[i].substring(11))
+    }
+    //console.log("quantity is " + quantity)
+    for(let k = 0; k < items.length; k++)
+    {
+      if(items[k].barcode === barcodes[i].substring(0, 10))
+      {
+        isInItems = true
+        items[k].quantity += quantity
+      }
+    }
+    //console.log("isInItems = " + isInItems)
+
+    if(!isInItems)
+    {
+      for(let m = 0; m < allItems.length; m++)
+      {
+        if(allItems[m].barcode === barcodes[i].substring(0, 10))
+        {
+          //console.log("newing item")
+          items.push(new Item(allItems[m].barcode, allItems[m].name, quantity, allItems[m].unit, allItems[m].price))
+        }
+      }
+    }
+  }
+  //console.log(items[2])
+  return items
+}
+
+function checkPromotion(items: Item[], promotionBarcodes: string[]): Item[]
+{
+  for(let i = 0; i < items.length; i++)
+  {
+    for(let k = 0; k < promotionBarcodes.length; k++)
+    {
+      if(items[i].barcode === promotionBarcodes[k])
+      {
+        items[i].discounted = Math.floor(items[i].quantity / 3) * items[i].price
+        //items[i].quantity = (Math.floor(items[i].quantity / 3) * 2) + (items[i].quantity % 3)
+      }
+    }
+  }
+  return items
+}
+
+function calculatePrice(itemsAfterPromotion: Item[] ): number[]
+{
+  const subtotalArr = []
+  for(let i = 0; i < itemsAfterPromotion.length; i++)
+  {
+    subtotalArr[i] = itemsAfterPromotion[i].price * itemsAfterPromotion[i].quantity - itemsAfterPromotion[i].discounted
+  }
+  return subtotalArr
+}
+
+function render(subtotalArr: number[], items: Item[]): string
+{
+  let firstPart = '***<store earning no money>Receipt ***\n'
+  let discounted = 0
+  for(let i = 0; i < items.length; i++)
+  {
+    firstPart += 'Name：' + items[i].name + '，Quantity：' + items[i].quantity + ' '
+    + (items[i].unit) + 's，Unit：' + items[i].price.toFixed(2) + '(yuan)，Subtotal：'
+    + subtotalArr[i].toFixed(2) + '(yuan)\n'
+    discounted += items[i].discounted
+  }
+  let totalPrice = 0
+  for(let k = 0; k < subtotalArr.length; k++)
+  {
+    totalPrice += subtotalArr[k]
+  }
+  let secondPart = '----------------------\nTotal：'
+  secondPart += totalPrice.toFixed(2) + '(yuan)\nDiscounted prices：' +  discounted.toFixed(2) + '(yuan)\n**********************'
+  return firstPart + secondPart
+
+}
+
+// return `***<store earning no money>Receipt ***
+// Name：Sprite，Quantity：5 bottles，Unit：3.00(yuan)，Subtotal：12.00(yuan)
+// Name：Litchi，Quantity：2.5 pounds，Unit：15.00(yuan)，Subtotal：37.50(yuan)
+// Name：Instant Noodles，Quantity：3 bags，Unit：4.50(yuan)，Subtotal：9.00(yuan)
+// ----------------------
+// Total：58.50(yuan)
+// Discounted prices：7.50(yuan)
+// **********************`
