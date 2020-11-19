@@ -52,21 +52,16 @@ function identifyBarcodes(barcodes: string[], allItems: any[]): Item[] {
 }
 
 function checkPromotion(items: Item[], promotionBarcodes: string[]): Item[] {
-  for (let i = 0; i < items.length; i++) {
-    for (let k = 0; k < promotionBarcodes.length; k++) {
-      if (items[i].barcode === promotionBarcodes[k]) {
-        items[i].discounted = Math.floor(items[i].quantity / 3) * items[i].price
-      }
-    }
-  }
+  items.map(item => {
+    promotionBarcodes.map(
+      promotionBarcode => (promotionBarcode === item.barcode) ? item.discounted = Math.floor(item.quantity / 3) * item.price : null)
+  })
   return items
 }
 
 function calculatePrice(itemsAfterPromotion: Item[]): number[] {
-  const subtotalArr = []
-  for (let i = 0; i < itemsAfterPromotion.length; i++) {
-    subtotalArr[i] = itemsAfterPromotion[i].price * itemsAfterPromotion[i].quantity - itemsAfterPromotion[i].discounted
-  }
+  const subtotalArr: number[] = []
+  itemsAfterPromotion.map(item => subtotalArr.push(item.price * item.quantity - item.discounted))
   return subtotalArr
 }
 
@@ -80,9 +75,7 @@ function render(subtotalArr: number[], items: Item[]): string {
     discounted += items[i].discounted
   }
   let totalPrice = 0
-  for (let k = 0; k < subtotalArr.length; k++) {
-    totalPrice += subtotalArr[k]
-  }
+  subtotalArr.map(subtotal => totalPrice += subtotal)
   let secondPart = '----------------------\nTotal：'
   secondPart += totalPrice.toFixed(2) + '(yuan)\nDiscounted prices：' + discounted.toFixed(2) + '(yuan)\n**********************'
   return firstPart + secondPart
